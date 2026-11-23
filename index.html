@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>i.vishvas_ | Premium Photo Finder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#101010;color:#fff;font-family:Arial,sans-serif}
+header{padding:24px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #333}
+.logo{font-size:25px;font-weight:bold;color:#d9b66d}
+nav a{color:#ddd;text-decoration:none;margin-left:15px;font-size:13px}
+.hero{text-align:center;padding:75px 20px 55px}
+.hero small{color:#d9b66d;letter-spacing:4px}
+.hero h1{font-size:42px;margin:20px 0}
+.hero h1 span{color:#d9b66d}
+.hero p{color:#aaa;line-height:1.7}
+.btn{background:#d9b66d;color:#111;border:0;padding:13px 23px;border-radius:6px;font-weight:bold;cursor:pointer;margin-top:22px}
+section{padding:25px 18px;max-width:850px;margin:auto}
+h2{color:#d9b66d;margin-bottom:18px}
+.panel{background:#1c1c1c;border:1px solid #39332a;border-radius:13px;padding:22px;margin-bottom:22px}
+input{width:100%;padding:14px;margin:10px 0;background:#111;color:white;border:1px solid #555;border-radius:6px}
+.upload{display:block;border:1px dashed #b99a5b;padding:25px;text-align:center;border-radius:9px;color:#d9b66d;margin:15px 0;cursor:pointer}
+.upload input{display:none}
+.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.photo{background:#222;border-radius:9px;overflow:hidden}
+.photo img{width:100%;height:180px;object-fit:cover;display:block}
+.photo a{display:block;color:#d9b66d;text-align:center;padding:12px;text-decoration:none}
+#qrcode{background:white;padding:12px;width:max-content;margin:20px auto}
+#qrcode img{display:block}
+.note{color:#aaa;font-size:13px;line-height:1.6;margin-top:14px}
+footer{text-align:center;padding:30px;color:#888;border-top:1px solid #333;margin-top:40px}
+@media(min-width:600px){.gallery{grid-template-columns:repeat(3,1fr)}.hero h1{font-size:58px}}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">i.vishvas_</div>
+<nav>
+<a href="#home">Home</a>
+<a href="#admin">Admin</a>
+<a href="#gallery">Gallery</a>
+</nav>
+</header>
+
+<div class="hero" id="home">
+<small>PREMIUM PHOTOGRAPHY EXPERIENCE</small>
+<h1>Your Memories,<br><span>One Place.</span></h1>
+<p>Capture beautiful moments. Find your photos.<br>Scan. View. Download.</p>
+<button class="btn" onclick="document.getElementById('gallery').scrollIntoView()">Explore Gallery</button>
+</div>
+
+<section id="admin">
+<h2>Admin Dashboard</h2>
+<div class="panel">
+<label>Event Name</label>
+<input id="eventName" placeholder="Enter event name">
+<label>Upload Photos</label>
+<label class="upload">
+＋ Select Photos From Your Phone
+<input type="file" id="photos" accept="image/*" multiple>
+</label>
+<button class="btn" onclick="createGallery()">Create Gallery</button>
+<p class="note">Demo mode: selected photos are displayed only in this browser. They are not uploaded to cloud storage.</p>
+</div>
+</section>
+
+<section id="gallery">
+<h2 id="galleryTitle">Photo Gallery</h2>
+<div class="panel">
+<p id="eventLabel">Your event photos will appear here.</p>
+<div class="gallery" id="photoGallery"></div>
+</div>
+</section>
+
+<section>
+<h2>Event QR Code</h2>
+<div class="panel" style="text-align:center">
+<p>Scan this QR code to open this website.</p>
+<div id="qrcode"></div>
+<button class="btn" onclick="downloadQR()">Download QR Code</button>
+<p class="note">Demo QR only. It opens the website, but photos cannot yet be shared between different phones.</p>
+</div>
+</section>
+
+<footer>
+<div class="logo">i.vishvas_</div>
+<p style="margin-top:12px">Premium Photo Finder</p>
+<p style="margin-top:8px">© 2026 i.vishvas_</p>
+</footer>
+
+<script>
+let selectedPhotos=[];
+
+document.getElementById('photos').addEventListener('change',function(e){
+selectedPhotos=Array.from(e.target.files);
+});
+
+function createGallery(){
+const name=document.getElementById('eventName').value.trim();
+if(!name){alert('Please enter event name');return;}
+if(!selectedPhotos.length){alert('Please select photos');return;}
+
+document.getElementById('galleryTitle').textContent=name;
+document.getElementById('eventLabel').textContent='Event: '+name;
+
+const gallery=document.getElementById('photoGallery');
+gallery.innerHTML='';
+
+selectedPhotos.forEach(file=>{
+const url=URL.createObjectURL(file);
+const card=document.createElement('div');
+card.className='photo';
+
+const img=document.createElement('img');
+img.src=url;
+img.alt='Event photo';
+
+const link=document.createElement('a');
+link.href=url;
+link.download=file.name;
+link.textContent='Download Photo ↓';
+
+card.appendChild(img);
+card.appendChild(link);
+gallery.appendChild(card);
+});
+
+document.getElementById('gallery').scrollIntoView();
+}
+
+function makeQR(){
+const target=window.location.href.split('#')[0];
+const qr=document.getElementById('qrcode');
+qr.innerHTML='';
+if(typeof QRCode!=='undefined'){
+new QRCode(qr,{text:target,width:180,height:180});
+}else{
+qr.textContent='QR library unavailable. Reload the page.';
+}
+}
+
+function downloadQR(){
+const img=document.querySelector('#qrcode img');
+if(!img){alert('QR code is not ready');return;}
+const a=document.createElement('a');
+a.href=img.src;
+a.download='i-vishvas-QR.png';
+a.click();
+}
+
+makeQR();
+</script>
+</body>
+</html>
