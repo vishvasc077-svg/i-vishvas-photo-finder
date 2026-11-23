@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -93,66 +92,132 @@ footer{text-align:center;padding:30px;color:#888;border-top:1px solid #333;margi
 </footer>
 
 <script>
-let selectedPhotos=[];
+<script>
+const CLOUD_NAME = "mhjdhrfz";
+const UPLOAD_PRESET = "ivishvas_demo_upload";
 
-document.getElementById('photos').addEventListener('change',function(e){
-selectedPhotos=Array.from(e.target.files);
+let selectedPhotos = [];
+
+document.getElementById("photos").addEventListener("change", function(e) {
+  selectedPhotos = Array.from(e.target.files);
 });
 
-function createGallery(){
-const name=document.getElementById('eventName').value.trim();
-if(!name){alert('Please enter event name');return;}
-if(!selectedPhotos.length){alert('Please select photos');return;}
+async function createGallery() {
+  const name = document.getElementById("eventName").value.trim();
 
-document.getElementById('galleryTitle').textContent=name;
-document.getElementById('eventLabel').textContent='Event: '+name;
+  if (!name) {
+    alert("Please enter event name");
+    return;
+  }
 
-const gallery=document.getElementById('photoGallery');
-gallery.innerHTML='';
+  if (!selectedPhotos.length) {
+    alert("Please select photos");
+    return;
+  }
 
-selectedPhotos.forEach(file=>{
-const url=URL.createObjectURL(file);
-const card=document.createElement('div');
-card.className='photo';
+  const gallery = document.getElementById("photoGallery");
+  gallery.innerHTML = "Uploading photos...";
 
-const img=document.createElement('img');
-img.src=url;
-img.alt='Event photo';
+  document.getElementById("galleryTitle").textContent = name;
+  document.getElementById("eventLabel").textContent = "Event: " + name;
 
-const link=document.createElement('a');
-link.href=url;
-link.download=file.name;
-link.textContent='Download Photo ↓';
+  const uploadedPhotos = [];
 
-card.appendChild(img);
-card.appendChild(link);
-gallery.appendChild(card);
-});
+  try {
+    for (const file of selectedPhotos) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        alert("Only JPG, PNG and WEBP photos are allowed.");
+        continue;
+      }
 
-document.getElementById('gallery').scrollIntoView();
+      if (file.size > 5 * 1024 * 1024) {
+        alert(file.name + " is larger than 5 MB.");
+        continue;
+      }
+
+      const data = new FormData();
+      data.append("file", file);
+      data.append("upload_preset", UPLOAD_PRESET);
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: data
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error?.message || "Upload failed");
+      }
+
+      uploadedPhotos.push({
+        url: result.secure_url,
+        name: file.name
+      });
+    }
+
+    gallery.innerHTML = "";
+
+    uploadedPhotos.forEach(photo => {
+      const card = document.createElement("div");
+      card.className = "photo";
+
+      const img = document.createElement("img");
+      img.src = photo.url;
+      img.alt = "Event photo";
+
+      const link = document.createElement("a");
+      link.href = photo.url;
+      link.target = "_blank";
+      link.textContent = "View Photo ↓";
+
+      card.appendChild(img);
+      card.appendChild(link);
+      gallery.appendChild(card);
+    });
+
+    if (!uploadedPhotos.length) {
+      gallery.textContent = "No photos uploaded.";
+    }
+
+    document.getElementById("gallery").scrollIntoView();
+
+  } catch (error) {
+    gallery.textContent = "Upload failed: " + error.message;
+  }
 }
 
-function makeQR(){
-const target=window.location.href.split('#')[0];
-const qr=document.getElementById('qrcode');
-qr.innerHTML='';
-if(typeof QRCode!=='undefined'){
-new QRCode(qr,{text:target,width:180,height:180});
-}else{
-qr.textContent='QR library unavailable. Reload the page.';
-}
+function makeQR() {
+  const target = window.location.href.split("#")[0];
+  const qr = document.getElementById("qrcode");
+  qr.innerHTML = "";
+
+  new QRCode(qr, {
+    text: target,
+    width: 180,
+    height: 180
+  });
 }
 
-function downloadQR(){
-const img=document.querySelector('#qrcode img');
-if(!img){alert('QR code is not ready');return;}
-const a=document.createElement('a');
-a.href=img.src;
-a.download='i-vishvas-QR.png';
-a.click();
+function downloadQR() {
+  const img = document.querySelector("#qrcode img");
+
+  if (!img) {
+    alert("QR code is not ready");
+    return;
+  }
+
+  const a = document.createElement("a");
+  a.href = img.src;
+  a.download = "i-vishvas-QR.png";
+  a.click();
 }
 
 makeQR();
+</script>
 </script>
 </body>
 </html>
