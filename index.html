@@ -1,10 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>i.vishvas_ | Premium Photo Finder</title>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#101010;color:#fff;font-family:Arial,sans-serif}
@@ -34,6 +38,7 @@ footer{text-align:center;padding:30px;color:#888;border-top:1px solid #333;margi
 @media(min-width:600px){.gallery{grid-template-columns:repeat(3,1fr)}.hero h1{font-size:58px}}
 </style>
 </head>
+
 <body>
 
 <header>
@@ -49,46 +54,43 @@ footer{text-align:center;padding:30px;color:#888;border-top:1px solid #333;margi
 <small>PREMIUM PHOTOGRAPHY EXPERIENCE</small>
 <h1>Your Memories,<br><span>One Place.</span></h1>
 <p>Capture beautiful moments. Find your photos.<br>Scan. View. Download.</p>
-<button class="btn" onclick="document.getElementById('gallery').scrollIntoView()">Explore Gallery</button>
+<button class="btn" onclick="document.getElementById('gallery').scrollIntoView()">
+Explore Gallery
+</button>
 </div>
 
 <section id="admin">
-  <h2>Admin Login</h2>
+<h2>Admin Login</h2>
 
-  <div class="panel" id="loginBox">
-    <label>Admin Password</label>
-    <input type="password" id="adminPassword"
-           placeholder="Enter password">
+<div class="panel" id="loginBox">
+<label>Admin Password</label>
+<input type="password" id="adminPassword" placeholder="Enter password">
 
-    <button class="btn" onclick="adminLogin()">
-      Login
-    </button>
+<button class="btn" onclick="adminLogin()">Login</button>
+<p id="loginMessage" class="note"></p>
+</div>
 
-    <p id="loginMessage"></p>
-  </div>
+<div class="panel" id="adminDashboard" hidden>
+<h2>Admin Dashboard</h2>
 
-  <div class="panel" id="adminDashboard" hidden>
-    <h2>Admin Dashboard</h2>
+<label>Event Name</label>
+<input id="eventName" placeholder="Enter event name">
 
-    <label>Event Name</label>
-    <input id="eventName" placeholder="Enter event name">
+<label>Upload Photos</label>
+<label class="upload">
+＋ Select Photos From Your Phone
+<input type="file" id="photos" accept="image/jpeg,image/png,image/webp" multiple>
+</label>
 
-    <label>Upload Photos</label>
-    <label class="upload">
-      ＋ Select Photos From Your Phone
-      <input type="file" id="photos" accept="image/*" multiple>
-    </label>
+<button class="btn" id="uploadButton" onclick="createGallery()">
+Create Gallery
+</button>
 
-    <button class="btn" onclick="createGallery()">
-      Create Gallery
-    </button>
-
-    <button class="btn" onclick="adminLogout()">
-      Logout
-    </button>
-  </div>
+<button class="btn" onclick="adminLogout()">Logout</button>
+<p id="uploadMessage" class="note"></p>
+</div>
 </section>
-  
+
 <section id="gallery">
 <h2 id="galleryTitle">Photo Gallery</h2>
 <div class="panel">
@@ -103,7 +105,7 @@ footer{text-align:center;padding:30px;color:#888;border-top:1px solid #333;margi
 <p>Scan this QR code to open this website.</p>
 <div id="qrcode"></div>
 <button class="btn" onclick="downloadQR()">Download QR Code</button>
-<p class="note">Demo QR only. It opens the website, but photos cannot yet be shared between different phones.</p>
+<p class="note">Scan to view the shared photo gallery.</p>
 </div>
 </section>
 
@@ -114,17 +116,80 @@ footer{text-align:center;padding:30px;color:#888;border-top:1px solid #333;margi
 </footer>
 
 <script>
+/* CLOUDINARY SETTINGS */
 const CLOUD_NAME = "mhjdhrfz";
 const UPLOAD_PRESET = "ivishvas_demo_upload";
 
+/* SUPABASE SETTINGS */
+const SUPABASE_URL = "https://eeamysgviuruvoimjdir.supabase.co";
+const SUPABASE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
 let selectedPhotos = [];
 
+/* PHOTO SELECTION */
 document.getElementById("photos").addEventListener("change", function(e) {
   selectedPhotos = Array.from(e.target.files);
+  document.getElementById("uploadMessage").textContent =
+    selectedPhotos.length + " photo(s) selected.";
 });
 
+/* ADMIN LOGIN */
+async function adminLogin() {
+  const password = document.getElementById("adminPassword").value;
+  const message = document.getElementById("loginMessage");
+
+  message.textContent = "Checking login...";
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: ADMIN_EMAIL,
+    password: password
+  });
+
+  if (error) {
+    message.textContent = "Login failed. Please check your password.";
+    return;
+  }
+
+  showAdmin();
+}
+
+/* SHOW ADMIN */
+function showAdmin() {
+  document.getElementById("loginBox").hidden = true;
+  document.getElementById("adminDashboard").hidden = false;
+  document.getElementById("loginMessage").textContent = "";
+}
+
+/* LOGOUT */
+async function adminLogout() {
+  await supabaseClient.auth.signOut();
+
+  document.getElementById("adminDashboard").hidden = true;
+  document.getElementById("loginBox").hidden = false;
+  document.getElementById("adminPassword").value = "";
+  document.getElementById("loginMessage").textContent = "Logged out.";
+}
+
+/* CHECK EXISTING LOGIN */
+async function checkLogin() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    showAdmin();
+  }
+}
+
+/* CREATE GALLERY */
 async function createGallery() {
   const name = document.getElementById("eventName").value.trim();
+  const message = document.getElementById("uploadMessage");
+  const button = document.getElementById("uploadButton");
 
   if (!name) {
     alert("Please enter event name");
@@ -136,81 +201,126 @@ async function createGallery() {
     return;
   }
 
-  const gallery = document.getElementById("photoGallery");
-  gallery.innerHTML = "Uploading photos...";
+  const { data: sessionData } = await supabaseClient.auth.getSession();
 
-  document.getElementById("galleryTitle").textContent = name;
-  document.getElementById("eventLabel").textContent = "Event: " + name;
+  if (!sessionData.session) {
+    alert("Please login first.");
+    return;
+  }
 
-  const uploadedPhotos = [];
+  button.disabled = true;
+  message.textContent = "Uploading photos...";
+
+  let successCount = 0;
 
   try {
     for (const file of selectedPhotos) {
+
       if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-        alert("Only JPG, PNG and WEBP photos are allowed.");
+        message.textContent = "Unsupported file: " + file.name;
         continue;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        alert(file.name + " is larger than 5 MB.");
+        message.textContent = file.name + " is larger than 5 MB.";
         continue;
       }
 
-      const data = new FormData();
-      data.append("file", file);
-      data.append("upload_preset", UPLOAD_PRESET);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
 
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
         {
           method: "POST",
-          body: data
+          body: formData
         }
       );
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error?.message || "Upload failed");
+        throw new Error(result.error?.message || "Cloudinary upload failed");
       }
 
-      uploadedPhotos.push({
-        url: result.secure_url,
-        name: file.name
-      });
+      const { error } = await supabaseClient
+        .from("photos")
+        .insert({
+          event_name: name,
+          image_url: result.secure_url
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      successCount++;
     }
 
-    gallery.innerHTML = "";
+    selectedPhotos = [];
+    document.getElementById("photos").value = "";
 
-    uploadedPhotos.forEach(photo => {
-      const card = document.createElement("div");
-      card.className = "photo";
+    message.textContent = successCount + " photo(s) uploaded and saved.";
 
-      const img = document.createElement("img");
-      img.src = photo.url;
-      img.alt = "Event photo";
-
-      const link = document.createElement("a");
-      link.href = photo.url;
-      link.target = "_blank";
-      link.textContent = "View Photo ↓";
-
-      card.appendChild(img);
-      card.appendChild(link);
-      gallery.appendChild(card);
-    });
-
-    if (!uploadedPhotos.length) {
-      gallery.textContent = "No photos uploaded.";
-    }
-
-    document.getElementById("gallery").scrollIntoView();
+    await loadGallery();
 
   } catch (error) {
-    gallery.textContent = "Upload failed: " + error.message;
+    message.textContent = "Upload failed: " + error.message;
+  } finally {
+    button.disabled = false;
   }
 }
 
+/* LOAD SHARED GALLERY */
+async function loadGallery() {
+  const gallery = document.getElementById("photoGallery");
+  const eventLabel = document.getElementById("eventLabel");
+
+  gallery.innerHTML = "Loading photos...";
+
+  const { data, error } = await supabaseClient
+    .from("photos")
+    .select("id,event_name,image_url,created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    gallery.textContent = "Could not load photos: " + error.message;
+    return;
+  }
+
+  gallery.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    eventLabel.textContent = "Your event photos will appear here.";
+    gallery.textContent = "No photos uploaded yet.";
+    return;
+  }
+
+  eventLabel.textContent = data.length + " shared photo(s)";
+
+  data.forEach(photo => {
+    const card = document.createElement("div");
+    card.className = "photo";
+
+    const img = document.createElement("img");
+    img.src = photo.image_url;
+    img.alt = photo.event_name + " photo";
+    img.loading = "lazy";
+
+    const link = document.createElement("a");
+    link.href = photo.image_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = photo.event_name + " - View Photo ↓";
+
+    card.appendChild(img);
+    card.appendChild(link);
+    gallery.appendChild(card);
+  });
+}
+
+/* QR CODE */
 function makeQR() {
   const target = window.location.href.split("#")[0];
   const qr = document.getElementById("qrcode");
@@ -237,39 +347,12 @@ function downloadQR() {
   a.click();
 }
 
+/* START WEBSITE */
+checkLogin();
+loadGallery();
 makeQR();
-  const SUPABASE_URL = "https://eeamysgviuruvoimjdir.supabase.co";
-const SUPABASE_KEY = "sb_publishable_wUT6vt-Ma4XuzIX59SBh2Q_gq8kBpgg";
 
-const supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-  async function adminLogin() {
-  const password = document.getElementById("adminPassword").value;
-  const message = document.getElementById("loginMessage");
-
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email: "vishvasc077@gmail.com",
-    password: password
-  });
-
-  if (error) {
-    message.textContent = "Wrong password. Try again.";
-    return;
-  }
-
-  document.getElementById("loginBox").hidden = true;
-  document.getElementById("adminDashboard").hidden = false;
-}
-
-async function adminLogout() {
-  await supabaseClient.auth.signOut();
-  document.getElementById("adminDashboard").hidden = true;
-  document.getElementById("loginBox").hidden = false;
-  document.getElementById("adminPassword").value = "";
-}
 </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </body>
 </html>
