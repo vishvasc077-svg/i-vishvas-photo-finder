@@ -216,6 +216,14 @@ function downloadQR() {
 }
 
 makeQR();
+  const SUPABASE_URL = "https://eeamysgviuruvoimjdir.supabase.co";
+const SUPABASE_KEY = "sb_publishable_wUT6vt-Ma4XuzIX59SBh2Q_gq8kBpgg";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>
