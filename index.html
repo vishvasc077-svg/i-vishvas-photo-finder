@@ -53,20 +53,42 @@ footer{text-align:center;padding:30px;color:#888;border-top:1px solid #333;margi
 </div>
 
 <section id="admin">
-<h2>Admin Dashboard</h2>
-<div class="panel">
-<label>Event Name</label>
-<input id="eventName" placeholder="Enter event name">
-<label>Upload Photos</label>
-<label class="upload">
-＋ Select Photos From Your Phone
-<input type="file" id="photos" accept="image/*" multiple>
-</label>
-<button class="btn" onclick="createGallery()">Create Gallery</button>
-<p class="note">Demo mode: selected photos are displayed only in this browser. They are not uploaded to cloud storage.</p>
-</div>
-</section>
+  <h2>Admin Login</h2>
 
+  <div class="panel" id="loginBox">
+    <label>Admin Password</label>
+    <input type="password" id="adminPassword"
+           placeholder="Enter password">
+
+    <button class="btn" onclick="adminLogin()">
+      Login
+    </button>
+
+    <p id="loginMessage"></p>
+  </div>
+
+  <div class="panel" id="adminDashboard" hidden>
+    <h2>Admin Dashboard</h2>
+
+    <label>Event Name</label>
+    <input id="eventName" placeholder="Enter event name">
+
+    <label>Upload Photos</label>
+    <label class="upload">
+      ＋ Select Photos From Your Phone
+      <input type="file" id="photos" accept="image/*" multiple>
+    </label>
+
+    <button class="btn" onclick="createGallery()">
+      Create Gallery
+    </button>
+
+    <button class="btn" onclick="adminLogout()">
+      Logout
+    </button>
+  </div>
+</section>
+  
 <section id="gallery">
 <h2 id="galleryTitle">Photo Gallery</h2>
 <div class="panel">
@@ -223,6 +245,30 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+  async function adminLogin() {
+  const password = document.getElementById("adminPassword").value;
+  const message = document.getElementById("loginMessage");
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: "vishvasc077@gmail.com",
+    password: password
+  });
+
+  if (error) {
+    message.textContent = "Wrong password. Try again.";
+    return;
+  }
+
+  document.getElementById("loginBox").hidden = true;
+  document.getElementById("adminDashboard").hidden = false;
+}
+
+async function adminLogout() {
+  await supabaseClient.auth.signOut();
+  document.getElementById("adminDashboard").hidden = true;
+  document.getElementById("loginBox").hidden = false;
+  document.getElementById("adminPassword").value = "";
+}
 </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
